@@ -1,0 +1,12 @@
+import pandas as pd
+from imblearn.over_sampling import SMOTE
+
+df = pd.read_csv("processeddata.csv")
+
+X = df.drop('Is Fraud?', axis=1)
+y = df['Is Fraud?']
+
+smote = SMOTE()
+X_res, y_res = smote.fit_resample(X, y)
+
+print(pd.Series(y_res).value_counts())
