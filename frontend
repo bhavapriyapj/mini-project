@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fraud Detection System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            font-size: 14px;
+            color: #333;
+            display: block;
+            margin-bottom: 5px;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .message {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .error {
+            background-color: #ffdddd;
+            color: #ff0000;
+        }
+        .success {
+            background-color: #ddffdd;
+            color: #006400;
+        }
+    </style>
+</head>
+<body>
+    <h1>Fraud Detection System</h1>
+    <div class="container">
+        <div class="form-group">
+            <label for="user_id">User ID:</label>
+            <input type="text" id="user_id" placeholder="Enter your User ID" required>
+        </div>
+        <div class="form-group">
+            <label for="card_number">Card Number:</label>
+            <input type="text" id="card_number" placeholder="Enter Card Number" required>
+        </div>
+        <div class="form-group">
+            <label for="year">Year:</label>
+            <input type="number" id="year" placeholder="Enter Year" required>
+        </div>
+        <div class="form-group">
+            <label for="month">Month:</label>
+            <input type="number" id="month" placeholder="Enter Month" required>
+        </div>
+        <div class="form-group">
+            <label for="day">Day:</label>
+            <input type="number" id="day" placeholder="Enter Day" required>
+        </div>
+        <div class="form-group">
+            <label for="time">Time (HH:MM:SS):</label>
+            <input type="text" id="time" placeholder="Enter Time" required>
+        </div>
+        <div class="form-group">
+            <label for="amount">Amount:</label>
+            <input type="number" id="amount" placeholder="Enter Amount" required>
+        </div>
+        <div class="form-group">
+            <label for="use_chip">Use Chip:</label>
+            <select id="use_chip" required>
+                <option value="1">Yes</option>
+                <option value="0">No</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="merchant_name">Merchant Name:</label>
+            <input type="text" id="merchant_name" placeholder="Enter Merchant Name" required>
+        </div>
+        <div class="form-group">
+            <label for="merchant_city">Merchant City:</label>
+            <input type="text" id="merchant_city" placeholder="Enter Merchant City" required>
+        </div>
+        <div class="form-group">
+            <label for="mcc">MCC:</label>
+            <input type="number" id="mcc" placeholder="Enter MCC" required>
+        </div>
+
+        <button id="submit_btn">Check Fraud</button>
+
+        <div id="result" class="message" style="display: none;"></div>
+        <div id="otp_section" class="message" style="display: none;">
+            <label for="otp">Enter OTP:</label>
+            <input type="text" id="otp" placeholder="Enter OTP to verify" required>
+            <button id="verify_otp">Verify OTP</button>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById("submit_btn").addEventListener("click", function() {
+            // Collect input data
+            const user_id = document.getElementById("user_id").value;
+            const card_number = document.getElementById("card_number").value;
+            const year = document.getElementById("year").value;
+            const month = document.getElementById("month").value;
+            const day = document.getElementById("day").value;
+            const time = document.getElementById("time").value;
+            const amount = document.getElementById("amount").value;
+            const use_chip = document.getElementById("use_chip").value;
+            const merchant_name = document.getElementById("merchant_name").value;
+            const merchant_city = document.getElementById("merchant_city").value;
+            const mcc = document.getElementById("mcc").value;
+
+            const features = [user_id, card_number, year, month, day, time, amount, use_chip, merchant_name, merchant_city, mcc];
+
+            // Validate inputs
+            if (features.some(f => f === "" || f === null)) {
+                alert("Please fill in all fields.");
+                return;
+            }
+
+            // Prepare data for backend
+            const data = {
+                user_id: user_id,
+                features: features
+            };
+
+            // Call the backend API
+            fetch('/predict', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                document.getElementById("result").style.display = "block";
+                if (result.error) {
+                    document.getElementById("result").className = "message error";
+                    document.getElementById("result").innerText = result.error;
+                } else {
+                    document.getElementById("result").className = "message success";
+                    document.getElementById("result").innerText = `Fraud Prediction: ${result.fraud_prediction === 1 ? "Fraud" : "ALERT TRIGGERED"}\nRisk Score: ${result.risk_score.toFixed(2)}%\nConfidence: ${result.confidence}`;
+
+                    // Show OTP verification if fraud risk is high
+                    if (result.fraud_prediction === 1) {
+                        document.getElementById("otp_section").style.display = "block";
+                    } else {
+                        document.getElementById("otp_section").style.display = "none";
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while processing your request.');
+            });
+        });
+
+        // OTP verification logic
+        document.getElementById("verify_otp").addEventListener("click", function() {
+            const user_id = document.getElementById("user_id").value;
+            const otp = parseInt(document.getElementById("otp").value);  // Ensure OTP is treated as an integer
+
+            fetch('/verify_otp', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ user_id, otp })
+            })
+            .then(response => response.json())
+            .then(result => {
+                const resultMessage = document.getElementById("result");
+
+                if (result.message) {
+                    // OTP verified successfully
+                    alert(result.message);
+                    document.getElementById("otp_section").style.display = "none"; // Hide OTP section after verification
+                    resultMessage.className = "message success";
+                    resultMessage.innerText = result.message;
+                } else if (result.error) {
+                    // Invalid OTP
+                    alert(result.error);
+                    resultMessage.className = "message error";
+                    resultMessage.innerText = result.error;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while verifying OTP.');
+            });
+        });
+    </script>
+</body>
+</html>
